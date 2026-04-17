@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Dig</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23C8843A'/><line x1='15' y1='88' x2='55' y2='48' stroke='%23fff' stroke-width='9' stroke-linecap='round'/><polygon points='55,48 72,14 86,28 55,48' fill='%23fff'/><line x1='40' y1='68' x2='28' y2='80' stroke='%23fff' stroke-width='7' stroke-linecap='round'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --linen:      #FAF6EE;
+  --linen-mid:  #F2EBD9;
+  --linen-deep: #E8DEC8;
+  --ink:        #2C2416;
+  --ink-soft:   #5C4E38;
+  --sage:       #7A9174;
+  --sage-light: #A8BEA3;
+  --sage-pale:  #E8F0E5;
+  --amber:      #C8843A;
+  --amber-light:#E4A85A;
+  --amber-pale: #FBF0E0;
+  --muted:      #9A8E7E;
+  --border:     rgba(120,100,70,0.15);
+  --correct:    #4A7A4A;
+  --wrong:      #8B3535;
+  --correct-bg: #EEF5EC;
+  --wrong-bg:   #FBF0F0;
+}
+html, body {
+  min-height: 100vh;
+  background: var(--linen);
+  color: var(--ink);
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+}
+.app { min-height: 100vh; display: flex; flex-direction: column; position: relative; }
+.app::before {
+  content: '';
+  position: fixed; top: 0; right: -10px;
+  width: 200px; height: 300px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 300'%3E%3Cg fill='none' stroke='%237A9174' stroke-opacity='0.2' stroke-linecap='round'%3E%3Cpath d='M160 10 Q140 60 120 80 Q100 100 80 140' stroke-width='2'/%3E%3Cellipse cx='155' cy='75' rx='22' ry='14' transform='rotate(-30 155 75)' fill='%237A9174' fill-opacity='0.1' stroke-width='1'/%3E%3Cellipse cx='140' cy='55' rx='18' ry='11' transform='rotate(20 140 55)' fill='%237A9174' fill-opacity='0.08' stroke-width='1'/%3E%3Cpath d='M120 80 Q125 65 138 58' stroke-width='1'/%3E%3Cellipse cx='148' cy='100' rx='20' ry='12' transform='rotate(-50 148 100)' fill='%237A9174' fill-opacity='0.08' stroke-width='1'/%3E%3Cpath d='M120 80 Q135 95 145 103' stroke-width='1'/%3E%3Cellipse cx='90' cy='130' rx='24' ry='13' transform='rotate(15 90 130)' fill='%237A9174' fill-opacity='0.07' stroke-width='1'/%3E%3Cpath d='M100 110 Q88 122 88 132' stroke-width='1'/%3E%3Cpath d='M80 140 Q60 180 50 240' stroke-width='2'/%3E%3Cellipse cx='55' cy='190' rx='19' ry='11' transform='rotate(-20 55 190)' fill='%237A9174' fill-opacity='0.07' stroke-width='1'/%3E%3Cpath d='M70 165 Q58 178 57 188' stroke-width='1'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-size: contain;
+  pointer-events: none; z-index: 0;
+}
+.app::after {
+  content: '';
+  position: fixed; bottom: -10px; left: -10px;
+  width: 180px; height: 240px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 260'%3E%3Cg fill='none' stroke='%237A9174' stroke-opacity='0.18' stroke-linecap='round'%3E%3Cpath d='M40 260 Q50 210 70 180 Q90 150 100 110' stroke-width='2'/%3E%3Cellipse cx='88' cy='150' rx='22' ry='12' transform='rotate(20 88 150)' fill='%237A9174' fill-opacity='0.09' stroke-width='1'/%3E%3Cpath d='M80 165 Q85 153 90 148' stroke-width='1'/%3E%3Cellipse cx='112' cy='125' rx='20' ry='11' transform='rotate(-35 112 125)' fill='%237A9174' fill-opacity='0.08' stroke-width='1'/%3E%3Cpath d='M100 130 Q106 126 114 124' stroke-width='1'/%3E%3Cellipse cx='68' cy='188' rx='18' ry='10' transform='rotate(-15 68 188)' fill='%237A9174' fill-opacity='0.08' stroke-width='1'/%3E%3Cpath d='M72 178 Q68 184 66 190' stroke-width='1'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-size: contain;
+  pointer-events: none; z-index: 0;
+}
+.site-header {
+  padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: rgba(250,246,238,0.94);
+  backdrop-filter: blur(8px);
+  position: sticky; top: 0; z-index: 10;
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-mark {
+  width: 30px; height: 30px;
+  border: 1.5px solid rgba(200,132,58,0.4);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--amber-pale);
+}
+.logo-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 400; color: var(--ink);
+}
+.header-right { display: flex; align-items: center; gap: 12px; }
+.date-chip { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+.settings-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); padding: 4px; font-size: 17px;
+  display: flex; align-items: center; transition: color 0.2s;
+}
+.settings-btn:hover { color: var(--amber); }
+.screen { display: none; flex: 1; position: relative; z-index: 1; }
+.screen.active { display: flex; flex-direction: column; }
+.centered { align-items: center; justify-content: center; padding: 36px 28px; text-align: center; }
+.onboard-wrap { max-width: 380px; width: 100%; display: flex; flex-direction: column; align-items: center; }
+.onboard-step-indicator { display: flex; gap: 6px; margin-bottom: 28px; }
+.step-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--linen-deep); transition: background 0.3s; }
+.step-dot.active { background: var(--amber); }
+.step-dot.done   { background: var(--sage-light); }
+.onboard-icon {
+  width: 68px; height: 68px; border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 22px; background: var(--amber-pale);
+  border: 1px solid rgba(200,132,58,0.2); font-size: 30px;
+}
+.onboard-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(26px, 6vw, 36px); font-weight: 400;
+  line-height: 1.2; color: var(--ink); margin-bottom: 14px;
+}
+.onboard-title em { font-style: italic; color: var(--amber); }
+.onboard-body { font-size: 15px; color: var(--ink-soft); line-height: 1.75; margin-bottom: 28px; max-width: 320px; }
+.onboard-body strong { color: var(--ink); font-weight: 400; }
+.step-list { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+.step-row { display: flex; gap: 14px; align-items: flex-start; }
+.step-num {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--amber-pale); border: 1px solid rgba(200,132,58,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--amber);
+  font-family: 'Cormorant Garamond', serif; margin-top: 2px;
+}
+.step-text { font-size: 14px; color: var(--ink-soft); line-height: 1.65; }
+.step-text a { color: var(--amber); text-decoration: none; border-bottom: 1px solid rgba(200,132,58,0.3); }
+.step-text strong { color: var(--ink); font-weight: 500; }
+.code-input-wrap { width: 100%; margin-bottom: 10px; }
+.code-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px; text-align: left; }
+.code-input {
+  width: 100%; padding: 13px 14px; background: #fff;
+  border: 1px solid var(--linen-deep); border-radius: 10px;
+  color: var(--ink); font-family: 'Jost', sans-serif;
+  font-size: 14px; outline: none; transition: border-color 0.2s;
+  box-shadow: 0 1px 4px rgba(120,100,70,0.06);
+}
+.code-input:focus { border-color: var(--amber); }
+.code-input::placeholder { color: var(--muted); opacity: 0.5; }
+.code-hint { font-size: 11px; color: var(--muted); text-align: left; line-height: 1.55; margin-bottom: 22px; }
+.btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 14px 28px; width: 100%;
+  background: linear-gradient(135deg, var(--amber), var(--amber-light));
+  color: #fff; border: none; border-radius: 12px;
+  font-family: 'Jost', sans-serif; font-size: 14px; font-weight: 400;
+  letter-spacing: 0.08em; cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 2px 12px rgba(200,132,58,0.25);
+}
+.btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+.btn-ghost {
+  background: none; border: none; color: var(--muted);
+  font-family: 'Jost', sans-serif; font-size: 13px; cursor: pointer;
+  padding: 10px; letter-spacing: 0.04em; transition: color 0.2s; width: 100%; text-align: center;
+}
+.btn-ghost:hover { color: var(--ink); }
+.btn-secondary {
+  padding: 13px; width: 100%; background: #fff;
+  border: 1px solid var(--linen-deep); border-radius: 12px; color: var(--ink-soft);
+  font-family: 'Jost', sans-serif; font-size: 13px; letter-spacing: 0.05em;
+  cursor: pointer; transition: border-color 0.2s, color 0.2s;
+  box-shadow: 0 1px 4px rgba(120,100,70,0.05);
+}
+.btn-secondary:hover { border-color: var(--amber); color: var(--ink); }
+.btn-danger {
+  background: none; border: 1px solid rgba(139,53,53,0.25); border-radius: 10px;
+  color: #a07070; font-family: 'Jost', sans-serif; font-size: 12px;
+  padding: 9px 16px; cursor: pointer; letter-spacing: 0.04em;
+  transition: border-color 0.2s, color 0.2s; width: 100%;
+}
+.btn-danger:hover { border-color: var(--wrong); color: var(--wrong); }
+#screen-home { align-items: center; justify-content: center; padding: 40px 28px; text-align: center; }
+.home-leaf { margin: 0 auto 20px; opacity: 0.45; }
+.home-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(32px, 8vw, 50px); font-weight: 300;
+  line-height: 1.15; color: var(--ink); margin-bottom: 10px;
+}
+.home-title em { font-style: italic; color: var(--amber); }
+.home-sub { font-size: 15px; color: var(--ink-soft); line-height: 1.7; max-width: 280px; margin: 0 auto 28px; }
+.home-rule { width: 40px; height: 1px; background: linear-gradient(90deg, transparent, var(--sage-light), transparent); margin: 0 auto 28px; }
+#screen-loading { align-items: center; justify-content: center; padding: 40px 24px; text-align: center; gap: 20px; }
+.loader-ring {
+  width: 48px; height: 48px;
+  border: 2px solid var(--linen-deep); border-top-color: var(--amber);
+  border-radius: 50%; animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-label { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-style: italic; color: var(--ink-soft); }
+.loading-step { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
+#screen-text { padding: 20px; max-width: 580px; width: 100%; margin: 0 auto; gap: 16px; }
+.text-card {
+  background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 24px;
+  flex: 1; overflow-y: auto; box-shadow: 0 2px 16px rgba(120,100,70,0.07);
+}
+.text-eyebrow { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sage); margin-bottom: 12px; }
+.text-verse {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(15px, 3.8vw, 19px); font-style: italic; color: var(--amber);
+  line-height: 1.55; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+.text-body { font-size: 14px; line-height: 1.9; color: var(--ink-soft); }
+.text-actions { display: flex; flex-direction: column; gap: 10px; }
+#screen-quiz { padding: 0; max-width: 580px; width: 100%; margin: 0 auto; }
+.quiz-progress { padding: 16px 20px 0; display: flex; gap: 5px; align-items: center; }
+.q-pip { flex: 1; height: 3px; border-radius: 2px; background: var(--linen-deep); transition: background 0.4s; }
+.q-pip.done   { background: var(--sage); }
+.q-pip.active { background: var(--amber-light); }
+.quiz-score-label { font-size: 11px; color: var(--muted); white-space: nowrap; padding-left: 8px; }
+.quiz-card {
+  margin: 14px 16px 0; background: #fff;
+  border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+  animation: fadeUp 0.35s ease both; box-shadow: 0 2px 16px rgba(120,100,70,0.07);
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.quiz-card-header {
+  padding: 20px 20px 16px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, var(--amber-pale), var(--sage-pale));
+}
+.q-meta { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.q-num { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber); }
+.q-cat { font-size: 10px; letter-spacing: 0.1em;  text-transform: uppercase; color: var(--sage); }
+.q-text { font-family: 'Cormorant Garamond', serif; font-size: clamp(16px, 4vw, 20px); font-weight: 400; line-height: 1.45; color: var(--ink); }
+.quiz-card-body { padding: 16px 18px 18px; }
+.options { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+.option {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 13px; border: 1px solid var(--linen-deep);
+  border-radius: 10px; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.1s;
+  background: var(--linen); text-align: left; width: 100%;
+  font-family: 'Jost', sans-serif; font-size: 14px; line-height: 1.5; color: var(--ink-soft);
+}
+.option:hover:not(:disabled) { border-color: var(--amber-light); background: var(--amber-pale); transform: translateX(2px); }
+.option:disabled { cursor: default; }
+.option.correct { border-color: var(--correct); background: var(--correct-bg); color: var(--correct); }
+.option.wrong   { border-color: var(--wrong);   background: var(--wrong-bg);   color: var(--wrong); }
+.opt-letter {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid var(--linen-deep); background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--muted); margin-top: 1px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.option.correct .opt-letter { background: var(--correct); color: #fff; border-color: var(--correct); }
+.option.wrong   .opt-letter { background: var(--wrong);   color: #fff; border-color: var(--wrong); }
+.feedback { display: none; padding: 12px 13px; border-radius: 10px; font-size: 13px; line-height: 1.65; margin-bottom: 12px; }
+.feedback.show { display: block; animation: fadeUp 0.25s ease; }
+.feedback.fb-correct { background: var(--correct-bg); border-left: 3px solid var(--correct); color: #2a5a2a; }
+.feedback.fb-wrong   { background: var(--wrong-bg);   border-left: 3px solid var(--wrong);   color: #7a2a2a; }
+.feedback strong { font-weight: 500; }
+.fb-ref { display: block; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 12px; margin-top: 5px; color: var(--muted); }
+.btn-next {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, var(--amber), var(--amber-light));
+  color: #fff; border: none; border-radius: 10px;
+  font-family: 'Jost', sans-serif; font-size: 13px;
+  letter-spacing: 0.08em; cursor: pointer; display: none;
+  transition: opacity 0.2s; box-shadow: 0 2px 10px rgba(200,132,58,0.2);
+}
+.btn-next.show { display: block; animation: fadeUp 0.3s 0.1s ease both; }
+.btn-next:hover { opacity: 0.9; }
+#screen-results { align-items: center; justify-content: center; padding: 32px 24px 48px; text-align: center; }
+.results-wrap { max-width: 420px; width: 100%; }
+.results-ring { width: 110px; height: 110px; margin: 0 auto 22px; position: relative; display: flex; align-items: center; justify-content: center; }
+.results-ring svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+.results-score { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--ink); position: relative; z-index: 1; }
+.results-title { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 400; color: var(--ink); margin-bottom: 8px; }
+.results-sub { font-size: 14px; color: var(--ink-soft); line-height: 1.75; margin-bottom: 24px; }
+.missed-wrap { text-align: left; background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 22px; box-shadow: 0 1px 8px rgba(120,100,70,0.05); }
+.missed-title { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sage); margin-bottom: 12px; }
+.missed-item { padding: 8px 0 8px 12px; border-left: 2px solid var(--sage-light); margin-bottom: 10px; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+.missed-item:last-child { margin-bottom: 0; }
+.missed-ans { color: var(--correct); font-size: 12px; margin-top: 3px; }
+.missed-ref { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.results-actions { display: flex; flex-direction: column; gap: 10px; }
+#screen-settings { padding: 28px 24px; max-width: 480px; width: 100%; margin: 0 auto; }
+.settings-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 400; color: var(--ink); margin-bottom: 6px; }
+.settings-sub { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 24px; }
+.settings-section { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 14px; box-shadow: 0 1px 8px rgba(120,100,70,0.05); }
+.settings-section-title { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--sage); margin-bottom: 14px; }
+.settings-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.settings-row:last-child { margin-bottom: 0; }
+.settings-label { font-size: 13px; color: var(--ink); line-height: 1.5; }
+.settings-label span { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+.settings-label a { color: var(--amber); text-decoration: none; }
+.settings-code-input {
+  width: 100%; padding: 11px 13px; background: var(--linen);
+  border: 1px solid var(--linen-deep); border-radius: 9px; color: var(--ink);
+  font-family: 'Jost', sans-serif; font-size: 13px; outline: none;
+  transition: border-color 0.2s; letter-spacing: 0.03em; margin-bottom: 8px;
+}
+.settings-code-input:focus { border-color: var(--amber); }
+#screen-error { align-items: center; justify-content: center; padding: 40px 24px; text-align: center; gap: 14px; }
+.error-icon { font-size: 32px; }
+.error-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--ink); }
+.error-msg { font-size: 14px; color: var(--ink-soft); line-height: 1.6; max-width: 300px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="site-header">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C8843A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="21" x2="13" y2="11"/>
+          <polygon points="13,11 17,3 21,7 13,11" fill="#C8843A" stroke="#C8843A" stroke-width="1.5"/>
+          <line x1="9" y1="15" x2="6" y2="18"/>
+        </svg>
+      </div>
+      <span class="logo-text">Daily Dig</span>
+    </div>
+    <div class="header-right">
+      <span class="date-chip" id="headerDate"></span>
+      <button class="settings-btn" id="settingsBtn" onclick="goSettings()" title="Settings" style="display:none;">&#9881;</button>
+    </div>
+  </header>
+
+  <!-- ONBOARDING 1 -->
+
+  <section class="screen centered active" id="screen-ob1">
+    <div class="onboard-wrap">
+      <div class="onboard-step-indicator">
+        <div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div>
+      </div>
+      <div class="onboard-icon">&#127807;</div>
+      <h1 class="onboard-title">Welcome to<br><em>Daily Dig</em></h1>
+      <p class="onboard-body">A quiz drawn from <strong>today's daily text</strong> — automatically, every single day.<br><br>Dig deeper into Jehovah's Word, one day at a time.</p>
+      <button class="btn-primary" onclick="goOb2()">Get Started &rarr;</button>
+    </div>
+  </section>
+
+  <!-- ONBOARDING 2 -->
+
+  <section class="screen centered" id="screen-ob2">
+    <div class="onboard-wrap">
+      <div class="onboard-step-indicator">
+        <div class="step-dot done"></div><div class="step-dot active"></div><div class="step-dot"></div>
+      </div>
+      <div class="onboard-icon">&#128273;</div>
+      <h1 class="onboard-title">You need a<br><em>Daily Dig code</em></h1>
+      <p class="onboard-body">This app uses AI to turn each day's text into a personal quiz.<br><br>To do that, it needs a <strong>free personal code</strong> from the company that makes the AI. It takes about 2 minutes and you only do it once.</p>
+      <button class="btn-primary" onclick="goOb3()">Show me how &rarr;</button>
+      <button class="btn-ghost" onclick="goBack('screen-ob1')">&#8592; Back</button>
+    </div>
+  </section>
+
+  <!-- ONBOARDING 3 -->
+
+  <section class="screen centered" id="screen-ob3">
+    <div class="onboard-wrap">
+      <div class="onboard-step-indicator">
+        <div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot active"></div>
+      </div>
+      <div class="onboard-icon">&#128203;</div>
+      <h1 class="onboard-title">Get your<br><em>free code</em></h1>
+      <div class="step-list">
+        <div class="step-row"><div class="step-num">1</div><div class="step-text">Open <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> in your browser</div></div>
+        <div class="step-row"><div class="step-num">2</div><div class="step-text">Create a free account with your email address</div></div>
+        <div class="step-row"><div class="step-num">3</div><div class="step-text">Once logged in, tap <strong>API Keys</strong> in the menu</div></div>
+        <div class="step-row"><div class="step-num">4</div><div class="step-text">Tap <strong>Create Key</strong>, name it <strong>Daily Dig</strong></div></div>
+        <div class="step-row"><div class="step-num">5</div><div class="step-text">Copy the code it gives you, come back here and paste it below</div></div>
+      </div>
+      <div class="code-input-wrap">
+        <label class="code-label" for="codeInput">Paste your Daily Dig code here</label>
+        <input class="code-input" type="password" id="codeInput" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" />
+      </div>
+      <p class="code-hint">Your code is saved on this device only. Do not use Daily Dig on a shared device.</p>
+      <button class="btn-primary" onclick="saveCode()">Save my code &amp; start &rarr;</button>
+      <button class="btn-ghost" onclick="goBack('screen-ob2')">&#8592; Back</button>
+    </div>
+  </section>
+
+  <!-- HOME -->
+
+  <section class="screen centered" id="screen-home">
+    <svg class="home-leaf" width="52" height="52" viewBox="0 0 52 52" fill="none">
+      <path d="M26 48 Q10 34 10 22 Q10 8 26 4 Q42 8 42 22 Q42 34 26 48Z" fill="#7A9174" fill-opacity="0.12" stroke="#7A9174" stroke-opacity="0.25" stroke-width="1.5"/>
+      <line x1="26" y1="48" x2="26" y2="6" stroke="#7A9174" stroke-opacity="0.2" stroke-width="1" stroke-dasharray="2 3"/>
+      <path d="M26 22 Q20 17 17 13" stroke="#7A9174" stroke-opacity="0.2" stroke-width="1"/>
+      <path d="M26 30 Q32 25 35 21" stroke="#7A9174" stroke-opacity="0.2" stroke-width="1"/>
+    </svg>
+    <h1 class="home-title">Ready to<br><em>Dig In?</em></h1>
+    <p class="home-sub">Today's quiz is drawn fresh from the daily text. It only takes a few minutes.</p>
+    <div class="home-rule"></div>
+    <button class="btn-primary" style="max-width:300px;" onclick="startQuiz()">Begin Today's Quiz &rarr;</button>
+  </section>
+
+  <!-- LOADING -->
+
+  <section class="screen centered" id="screen-loading" style="gap:20px;">
+    <div class="loader-ring"></div>
+    <div class="loading-label">Digging into the Word...</div>
+    <div class="loading-step" id="loadingStep">Digging into the Word...</div>
+  </section>
+
+  <!-- TEXT PREVIEW -->
+
+  <section class="screen" id="screen-text">
+    <div class="text-card" style="margin:20px 20px 0;max-width:540px;width:calc(100% - 40px);align-self:center;">
+      <div class="text-eyebrow" id="textDate"></div>
+      <div class="text-verse" id="textVerse"></div>
+      <div class="text-body" id="textBody"></div>
+    </div>
+    <div class="text-actions" style="padding:16px 20px 24px;max-width:540px;width:100%;align-self:center;">
+      <button class="btn-primary" style="justify-content:center;" onclick="beginQuiz()">Start the Quiz &rarr;</button>
+      <button class="btn-secondary" onclick="goHome()">&#8592; Back to home</button>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+
+  <section class="screen" id="screen-quiz">
+    <div class="quiz-progress" id="quizProgress"></div>
+    <div id="quizCard" style="padding-bottom:28px;"></div>
+  </section>
+
+  <!-- RESULTS -->
+
+  <section class="screen centered" id="screen-results">
+    <div class="results-wrap">
+      <div class="results-ring" id="resultsRing"><div class="results-score" id="resultsScore"></div></div>
+      <h2 class="results-title" id="resultsTitle"></h2>
+      <p class="results-sub" id="resultsSub"></p>
+      <div class="missed-wrap" id="missedWrap" style="display:none;">
+        <div class="missed-title">Review These</div>
+        <div id="missedList"></div>
+      </div>
+      <div class="results-actions">
+        <button class="btn-primary" style="justify-content:center;" onclick="retakeQuiz()">Retake Quiz</button>
+        <button class="btn-secondary" onclick="showText()">Read Today's Text</button>
+        <button class="btn-secondary" onclick="goHome()">Back to Home</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+
+  <section class="screen" id="screen-settings">
+    <div style="padding:28px 24px;max-width:480px;width:100%;margin:0 auto;">
+      <h2 class="settings-title">Settings</h2>
+      <p class="settings-sub">Manage your Daily Dig code and learn how it works.</p>
+      <div class="settings-section">
+        <div class="settings-section-title">Your Daily Dig Code</div>
+        <div class="settings-row">
+          <div class="settings-label">Update your code <span>If you need to use a new code, paste it below and tap Save.</span></div>
+          <input class="settings-code-input" type="password" id="settingsCodeInput" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" />
+          <button class="btn-primary" style="justify-content:center;" onclick="updateCode()">Save new code</button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">Forget my code <span>Removes your code from this device. You will need to enter it again to use Daily Dig.</span></div>
+          <button class="btn-danger" onclick="forgetCode()">&#x2715; Remove my Daily Dig code</button>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">How It Works</div>
+        <div class="settings-row">
+          <div class="settings-label">Where does the quiz come from? <span>Each day, Daily Dig fetches the daily text from JW.org and uses AI to generate 10 quiz questions. All questions are based solely on JW.org content and the New World Translation.</span></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">Is my information private? <span>Your code is stored on this device only. The daily text sent to generate questions is already public on JW.org. No personal information is ever collected.</span></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label">How do I get a code? <span>Visit <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>, create a free account, go to API Keys, and tap Create Key.</span></div>
+        </div>
+      </div>
+      <button class="btn-secondary" style="margin-top:8px;" onclick="goHome()">&#8592; Back to home</button>
+    </div>
+  </section>
+
+  <!-- ERROR -->
+
+  <section class="screen centered" id="screen-error">
+    <div class="error-icon">&#127807;</div>
+    <div class="error-title">Something went wrong</div>
+    <div class="error-msg" id="errorMsg"></div>
+    <button class="btn-primary" style="max-width:280px;margin-top:8px;" onclick="goHome()">Try Again</button>
+  </section>
+
+</div>
+<script>
+var apiKey='',dailyText=null,questions=[],current=0,score=0,missed=[],answered=false;
+(function(){
+  var now=new Date();
+  document.getElementById('headerDate').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  var saved=localStorage.getItem('dtq_key');
+  if(saved&&saved.indexOf('sk-ant-')===0){apiKey=saved;document.getElementById('settingsBtn').style.display='flex';showScreen('screen-home');}
+  else showScreen('screen-ob1');
+})();
+function showScreen(id){var s=document.querySelectorAll('.screen');for(var i=0;i<s.length;i++)s[i].classList.remove('active');document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
+function goOb2(){showScreen('screen-ob2');}
+function goOb3(){showScreen('screen-ob3');}
+function goBack(id){showScreen(id);}
+function saveCode(){var v=document.getElementById('codeInput').value.trim();if(!v||v.indexOf('sk-ant-')!==0){alert('Please paste a valid Daily Dig code. It should start with sk-ant-');return;}apiKey=v;localStorage.setItem('dtq_key',apiKey);document.getElementById('settingsBtn').style.display='flex';showScreen('screen-home');}
+function goSettings(){document.getElementById('settingsCodeInput').value=apiKey||'';showScreen('screen-settings');}
+function updateCode(){var v=document.getElementById('settingsCodeInput').value.trim();if(!v||v.indexOf('sk-ant-')!==0){alert('Please enter a valid Daily Dig code starting with sk-ant-');return;}apiKey=v;localStorage.setItem('dtq_key',apiKey);alert('Your Daily Dig code has been updated.');}
+function forgetCode(){if(!confirm('Remove your Daily Dig code from this device?'))return;localStorage.removeItem('dtq_key');apiKey='';document.getElementById('settingsBtn').style.display='none';document.getElementById('codeInput').value='';showScreen('screen-ob1');}
+function goHome(){showScreen('screen-home');}
+function startQuiz(){
+  if(!apiKey){showScreen('screen-ob1');return;}
+  showScreen('screen-loading');setStep('Digging into the Word...');
+  fetchDailyText().then(function(text){dailyText=text;setStep('Your quiz is almost ready...');return generateQuestions(text);})
+  .then(function(qs){questions=qs;renderTextPreview();showScreen('screen-text');})
+  .catch(function(err){showError(err.message||'Something went wrong. Please try again.');});
+}
+function setStep(msg){document.getElementById('loadingStep').textContent=msg;}
+function fetchDailyText(){
+  return new Promise(function(resolve,reject){
+    var now=new Date();
+    var url='https://wol.jw.org/en/wol/dt/r1/lp-e/'+now.getFullYear()+'/'+(now.getMonth()+1)+'/'+now.getDate();
+    var proxyUrl='https://corsproxy.io/?'+encodeURIComponent(url);
+    fetch(proxyUrl).then(function(r){return r.text();}).then(function(html){
+      if(html&&html.length>100){
+        console.log('[DailyDig] Proxy OK, length:',html.length);
+        var parsed=parseDailyText(html,now);
+        if(parsed){console.log('[DailyDig] Parsed:',parsed.verse.substring(0,60));resolve(parsed);}
+        else reject(new Error('Could not read today\'s text. Please try again.'));
+      } else reject(new Error('Could not reach JW.org. Please check your connection and try again.'));
+    }).catch(function(){
+      fetch(url).then(function(r){return r.text();}).then(function(html){
+        var parsed=parseDailyText(html,now);
+        if(parsed)resolve(parsed);
+        else reject(new Error('Could not reach JW.org. Please check your internet connection.'));
+      }).catch(function(){reject(new Error('Could not reach JW.org. Please check your internet connection and try again.'));});
+    });
+  });
+}
+function parseDailyText(html,date){
+  try{
+    var doc=new DOMParser().parseFromString(html,'text/html');
+    var verse='',body='';
+
+```
+// The proxy-rendered HTML shows:
+// h1 with date e.g. "Thursday, April 16"
+// followed by italic paragraph (em or i tag) = theme verse
+// followed by regular paragraphs = body text
+
+// Find the h1 with the date
+var h1s=doc.querySelectorAll('h1');
+var dateH1=null;
+var months='january|february|march|april|may|june|july|august|september|october|november|december';
+for(var i=0;i<h1s.length;i++){
+  if(h1s[i].textContent.match(new RegExp(months,'i'))){
+    dateH1=h1s[i]; break;
+  }
+}
+
+if(dateH1){
+  // Walk siblings after the date h1
+  var el=dateH1.nextElementSibling;
+  while(el){
+    var tag=el.tagName.toLowerCase();
+    var txt=el.textContent.trim();
+    if(txt.length<5){el=el.nextElementSibling;continue;}
+
+    // Theme verse is typically in a p containing em or i, or is itself italic
+    if(!verse){
+      var hasItalic=el.querySelector('em,i');
+      if(hasItalic||tag==='blockquote'){
+        verse=txt;
+        el=el.nextElementSibling;
+        continue;
+      }
+      // If first real paragraph after h1, treat as verse anyway
+      if(tag==='p'&&txt.length>10&&txt.length<300){
+        verse=txt;
+        el=el.nextElementSibling;
+        continue;
+      }
+    }
+
+    // Body paragraphs
+    if(verse&&tag==='p'&&txt.length>20){
+      body+=(body?' ':'')+txt;
+    }
+
+    // Stop if we hit another heading
+    if(tag==='h1'||tag==='h2'||tag==='h3') break;
+
+    el=el.nextElementSibling;
+  }
+}
+
+// Fallback: if still no verse, grab first italic-containing p on page
+if(!verse){
+  var allP=doc.querySelectorAll('p');
+  for(var j=0;j<allP.length;j++){
+    var p=allP[j];
+    if(p.querySelector('em,i')&&p.textContent.trim().length>10){
+      verse=p.textContent.trim(); break;
+    }
+  }
+}
+
+// Fallback body: grab substantial paragraphs after verse
+if(!body){
+  var allP2=doc.querySelectorAll('p');
+  var foundVerse=false;
+  var parts=[];
+  for(var k=0;k<allP2.length;k++){
+    var pt=allP2[k].textContent.trim();
+    if(!foundVerse&&pt===verse){foundVerse=true;continue;}
+    if(foundVerse&&pt.length>30)parts.push(pt);
+    if(parts.length>=5)break;
+  }
+  body=parts.join(' ');
+}
+
+verse=verse.replace(/\s+/g,' ').trim();
+body=body.replace(/\s+/g,' ').trim();
+if(!verse&&!body)return null;
+
+return{
+  dateLabel:date.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}),
+  verse:verse||'(verse unavailable)',
+  body:body||'(text unavailable)'
+};
+```
+
+}catch(e){console.log(’[DailyDig] Parse error:’,e);return null;}
+}
+function generateQuestions(text){
+return new Promise(function(resolve,reject){
+var prompt=‘You are a quiz generator for the Daily Dig app, a Bible study tool used exclusively by Jehovah's Witnesses.\n\nSTRICT DOCTRINAL RULES – these are absolute and must never be violated:\n1. All answers, explanations, and feedback must reflect ONLY the beliefs and teachings of Jehovah's Witnesses as published by the Watch Tower Bible and Tract Society.\n2. All scripture quotations and references must come exclusively from the New World Translation of the Holy Scriptures (NWT).\n3. Do not introduce any theology, terminology, interpretation, or framing from any other religion, denomination, or Bible translation.\n4. Do not speculate beyond what is stated in the provided text. If the text does not say it, do not imply it.\n5. Use Jehovah's name where scripture references it. Do not substitute “God” or “Lord” where “Jehovah” is correct per the NWT.\n6. All correct answers and feedback must be directly and explicitly supported by the provided daily text or the cited scriptures.\n7. Wrong-answer feedback must gently correct using only what the text actually says – never introduce outside doctrine.\n8. Do not reference, quote, or allude to any other Bible translation, commentary, or religious source.\n\nSOURCE TEXT:\nDate: ‘+text.dateLabel+’\nTheme Verse: ‘+text.verse+’\nText Content: ‘+text.body+’\n\nGenerate exactly 10 multiple-choice quiz questions. Cover: exact scripture wording, key themes, doctrinal understanding per JW beliefs, reasoning, application, spiritual reflection.\n\nRespond ONLY with a valid JSON array. No markdown, no backticks.\nFormat: [{“category”:“label”,“question”:“text”,“options”:[“A”,“B”,“C”,“D”],“answer”:0,“correctFb”:“text”,“wrongFb”:“text”,“ref”:“NWT ref”}]\nRules: answer is zero-based index. Plain straight quotes only. Options under 15 words. Vary correct answer position. Warm encouraging feedback. Nothing contradicting JW doctrine.’;
+fetch(‘https://api.anthropic.com/v1/messages’,{method:‘POST’,headers:{‘Content-Type’:‘application/json’,‘x-api-key’:apiKey,‘anthropic-version’:‘2023-06-01’,‘anthropic-dangerous-direct-browser-access’:‘true’},body:JSON.stringify({model:‘claude-sonnet-4-20250514’,max_tokens:4000,messages:[{role:‘user’,content:prompt}]})})
+.then(function(r){return r.json();})
+.then(function(data){
+if(data.error){reject(new Error(‘There was a problem with your Daily Dig code: ‘+data.error.message));return;}
+var raw=data.content[0].text.trim().replace(/^`json\s*/i,'').replace(/^`\s*/i,’’).replace(/```\s*$/i,’’).trim();
+try{var qs=JSON.parse(raw);if(!Array.isArray(qs)||qs.length<5){reject(new Error(‘The quiz could not be generated. Please try again.’));return;}resolve(qs);}
+catch(e){reject(new Error(‘The quiz could not be generated. Please try again.’));}
+}).catch(function(){reject(new Error(‘Could not connect to generate your quiz. Please check your internet connection.’));});
+});
+}
+function renderTextPreview(){document.getElementById(‘textDate’).textContent=dailyText.dateLabel;document.getElementById(‘textVerse’).textContent=dailyText.verse;document.getElementById(‘textBody’).textContent=dailyText.body;}
+function showText(){if(dailyText)renderTextPreview();showScreen(‘screen-text’);}
+function beginQuiz(){current=0;score=0;missed=[];answered=false;showScreen(‘screen-quiz’);renderQuestion();}
+function retakeQuiz(){current=0;score=0;missed=[];answered=false;showScreen(‘screen-quiz’);renderQuestion();}
+function buildProgress(){
+var bar=document.getElementById(‘quizProgress’);bar.innerHTML=’’;
+for(var i=0;i<questions.length;i++){var pip=document.createElement(‘div’);pip.className=‘q-pip’+(i<current?’ done’:i===current?’ active’:’’);bar.appendChild(pip);}
+var lbl=document.createElement(‘div’);lbl.className=‘quiz-score-label’;lbl.textContent=score+’/’+questions.length;bar.appendChild(lbl);
+}
+function renderQuestion(){
+answered=false;buildProgress();
+var q=questions[current],letters=[‘A’,‘B’,‘C’,‘D’],opts=’’;
+for(var i=0;i<q.options.length;i++)opts+=’<button class="option" id="opt'+i+'" onclick="choose('+i+')">’+’<span class="opt-letter">’+letters[i]+’</span><span>’+q.options[i]+’</span></button>’;
+var nl=current<questions.length-1?‘Next Question →’:‘See Results’;
+document.getElementById(‘quizCard’).innerHTML=’<div class="quiz-card"><div class="quiz-card-header"><div class="q-meta"><span class="q-num">Question ‘+(current+1)+’ of ‘+questions.length+’</span><span class="q-cat">’+(q.category||’’)+’</span></div><div class="q-text">’+q.question+’</div></div><div class="quiz-card-body"><div class="options">’+opts+’</div><div class="feedback" id="feedback"></div><button class="btn-next" id="nextBtn" onclick="nextQ()">’+nl+’</button></div></div>’;
+}
+function choose(idx){
+if(answered)return;answered=true;
+var q=questions[current],isCorrect=idx===q.answer;
+var ao=document.querySelectorAll(’.option’);for(var i=0;i<ao.length;i++)ao[i].disabled=true;
+document.getElementById(‘opt’+idx).classList.add(isCorrect?‘correct’:‘wrong’);
+if(!isCorrect){document.getElementById(‘opt’+q.answer).classList.add(‘correct’);missed.push({q:q.question,a:q.options[q.answer],ref:q.ref||’’});}
+else score++;
+var fb=document.getElementById(‘feedback’);
+fb.className=‘feedback show ‘+(isCorrect?‘fb-correct’:‘fb-wrong’);
+fb.innerHTML=’<strong>’+(isCorrect?‘Correct.’:‘Not quite.’)+’</strong> ‘+(isCorrect?q.correctFb:q.wrongFb)+(q.ref?’<span class="fb-ref">’+q.ref+’</span>’:’’);
+document.getElementById(‘nextBtn’).classList.add(‘show’);buildProgress();
+}
+function nextQ(){current++;if(current>=questions.length)showResults();else renderQuestion();}
+function showResults(){
+var pct=Math.round((score/questions.length)*100),r=46,circ=2*Math.PI*r,dash=(pct/100)*circ;
+var svg=’<svg width="110" height="110" viewBox="0 0 110 110"><circle cx="55" cy="55" r="'+r+'" fill="none" stroke="#E8DEC8" stroke-width="7"/><circle cx="55" cy="55" r="'+r+'" fill="none" stroke="#C8843A" stroke-width="7" stroke-dasharray="'+dash+' '+circ+'" stroke-linecap="round"/></svg>’;
+document.getElementById(‘resultsRing’).innerHTML=svg+’<div class="results-score">’+score+’/’+questions.length+’</div>’;
+var title,sub;
+if(pct===100){title=‘Perfect Score!’;sub=‘You have absorbed every point from today's text. May it deepen your love for Jehovah and his Word.’;}
+else if(pct>=80){title=‘Well Done’;sub=‘Strong grasp of today's text. Review what you missed and let it take root in your heart.’;}
+else if(pct>=60){title=‘Good Start’;sub=‘You are building understanding. Re-reading the text alongside the scriptures will help reinforce what you have learned.’;}
+else{title=‘Keep Studying’;sub=‘Every reading deepens understanding. Consider going through today's text again before tomorrow's.’;}
+document.getElementById(‘resultsTitle’).textContent=title;
+document.getElementById(‘resultsSub’).textContent=sub;
+var mw=document.getElementById(‘missedWrap’),ml=document.getElementById(‘missedList’);
+if(missed.length>0){ml.innerHTML=’’;for(var i=0;i<missed.length;i++){var m=missed[i];ml.innerHTML+=’<div class="missed-item">’+m.q+’<div class="missed-ans">✓ ‘+m.a+’</div>’+(m.ref?’<div class="missed-ref">’+m.ref+’</div>’:’’)+’</div>’;}mw.style.display=‘block’;}
+else mw.style.display=‘none’;
+showScreen(‘screen-results’);
+}
+function showError(msg){document.getElementById(‘errorMsg’).textContent=msg;showScreen(‘screen-error’);}
+</script>
+
+</body>
+</html>
