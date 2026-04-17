@@ -521,99 +521,157 @@ function parseDailyText(html,date){
   try{
     var doc=new DOMParser().parseFromString(html,'text/html');
     var verse='',body='';
-    var themeEl=doc.querySelector('.themeScrp');
-    if(themeEl)verse=themeEl.textContent.trim();
-    var articleEl=doc.querySelector('#article');
-    if(articleEl){
-      var cl=articleEl.cloneNode(true);
-      var tc=cl.querySelector('.themeScrp');
-      if(tc)tc.parentNode.removeChild(tc);
-      var ps=cl.querySelectorAll('p'),parts=[];
-      for(var i=0;i<ps.length;i++){var t=ps[i].textContent.trim();if(t.length>20)parts.push(t);}
-      if(parts.length>0)body=parts.join(' ');
-    }
-    if(!body){var be=doc.querySelector('.bodyTxt');if(be)body=be.textContent.trim();}
-    if(!verse||!body){
-      var els=doc.querySelectorAll('h1,h2,h3,p,blockquote'),found=false,cands=[];
-      for(var j=0;j<els.length;j++){
-        var txt=els[j].textContent.trim();
-        if(!found&&txt.match(/january|february|march|april|may|june|july|august|september|october|november|december/i)&&txt.length<60){found=true;continue;}
-        if(found&&txt.length>15)cands.push(txt);
+
+```
+// The proxy-rendered HTML shows:
+// h1 with date e.g. "Thursday, April 16"
+// followed by italic paragraph (em or i tag) = theme verse
+// followed by regular paragraphs = body text
+
+// Find the h1 with the date
+var h1s=doc.querySelectorAll('h1');
+var dateH1=null;
+var months='january|february|march|april|may|june|july|august|september|october|november|december';
+for(var i=0;i<h1s.length;i++){
+  if(h1s[i].textContent.match(new RegExp(months,'i'))){
+    dateH1=h1s[i]; break;
+  }
+}
+
+if(dateH1){
+  // Walk siblings after the date h1
+  var el=dateH1.nextElementSibling;
+  while(el){
+    var tag=el.tagName.toLowerCase();
+    var txt=el.textContent.trim();
+    if(txt.length<5){el=el.nextElementSibling;continue;}
+
+    // Theme verse is typically in a p containing em or i, or is itself italic
+    if(!verse){
+      var hasItalic=el.querySelector('em,i');
+      if(hasItalic||tag==='blockquote'){
+        verse=txt;
+        el=el.nextElementSibling;
+        continue;
       }
-      if(cands.length>0&&!verse)verse=cands[0];
-      if(cands.length>1&&!body)body=cands.slice(1).join(' ');
+      // If first real paragraph after h1, treat as verse anyway
+      if(tag==='p'&&txt.length>10&&txt.length<300){
+        verse=txt;
+        el=el.nextElementSibling;
+        continue;
+      }
     }
-    if(!verse||!body){
-      var ap=doc.querySelectorAll('p'),lt=[];
-      for(var k=0;k<ap.length;k++){var pt=ap[k].textContent.trim();if(pt.length>40)lt.push(pt);}
-      if(lt.length>0&&!verse)verse=lt[0];
-      if(lt.length>1&&!body)body=lt.slice(1,6).join(' ');
+
+    // Body paragraphs
+    if(verse&&tag==='p'&&txt.length>20){
+      body+=(body?' ':'')+txt;
     }
-    verse=verse.replace(/\s+/g,' ').trim();
-    body=body.replace(/\s+/g,' ').trim();
-    if(!verse&&!body)return null;
-    return{dateLabel:date.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}),verse:verse||'(verse unavailable)',body:body||'(text unavailable)'};
-  }catch(e){return null;}
+
+    // Stop if we hit another heading
+    if(tag==='h1'||tag==='h2'||tag==='h3') break;
+
+    el=el.nextElementSibling;
+  }
+}
+
+// Fallback: if still no verse, grab first italic-containing p on page
+if(!verse){
+  var allP=doc.querySelectorAll('p');
+  for(var j=0;j<allP.length;j++){
+    var p=allP[j];
+    if(p.querySelector('em,i')&&p.textContent.trim().length>10){
+      verse=p.textContent.trim(); break;
+    }
+  }
+}
+
+// Fallback body: grab substantial paragraphs after verse
+if(!body){
+  var allP2=doc.querySelectorAll('p');
+  var foundVerse=false;
+  var parts=[];
+  for(var k=0;k<allP2.length;k++){
+    var pt=allP2[k].textContent.trim();
+    if(!foundVerse&&pt===verse){foundVerse=true;continue;}
+    if(foundVerse&&pt.length>30)parts.push(pt);
+    if(parts.length>=5)break;
+  }
+  body=parts.join(' ');
+}
+
+verse=verse.replace(/\s+/g,' ').trim();
+body=body.replace(/\s+/g,' ').trim();
+if(!verse&&!body)return null;
+
+return{
+  dateLabel:date.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}),
+  verse:verse||'(verse unavailable)',
+  body:body||'(text unavailable)'
+};
+```
+
+}catch(e){console.log(’[DailyDig] Parse error:’,e);return null;}
 }
 function generateQuestions(text){
-  return new Promise(function(resolve,reject){
-    var prompt='You are a quiz generator for the Daily Dig app, a Bible study tool used exclusively by Jehovah\'s Witnesses.\n\nSTRICT DOCTRINAL RULES -- these are absolute and must never be violated:\n1. All answers, explanations, and feedback must reflect ONLY the beliefs and teachings of Jehovah\'s Witnesses as published by the Watch Tower Bible and Tract Society.\n2. All scripture quotations and references must come exclusively from the New World Translation of the Holy Scriptures (NWT).\n3. Do not introduce any theology, terminology, interpretation, or framing from any other religion, denomination, or Bible translation.\n4. Do not speculate beyond what is stated in the provided text. If the text does not say it, do not imply it.\n5. Use Jehovah\'s name where scripture references it. Do not substitute "God" or "Lord" where "Jehovah" is correct per the NWT.\n6. All correct answers and feedback must be directly and explicitly supported by the provided daily text or the cited scriptures.\n7. Wrong-answer feedback must gently correct using only what the text actually says -- never introduce outside doctrine.\n8. Do not reference, quote, or allude to any other Bible translation, commentary, or religious source.\n\nSOURCE TEXT:\nDate: '+text.dateLabel+'\nTheme Verse: '+text.verse+'\nText Content: '+text.body+'\n\nGenerate exactly 10 multiple-choice quiz questions. Cover: exact scripture wording, key themes, doctrinal understanding per JW beliefs, reasoning, application, spiritual reflection.\n\nRespond ONLY with a valid JSON array. No markdown, no backticks.\nFormat: [{"category":"label","question":"text","options":["A","B","C","D"],"answer":0,"correctFb":"text","wrongFb":"text","ref":"NWT ref"}]\nRules: answer is zero-based index. Plain straight quotes only. Options under 15 words. Vary correct answer position. Warm encouraging feedback. Nothing contradicting JW doctrine.';
-    fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:prompt}]})})
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data.error){reject(new Error('There was a problem with your Daily Dig code: '+data.error.message));return;}
-      var raw=data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'').trim();
-      try{var qs=JSON.parse(raw);if(!Array.isArray(qs)||qs.length<5){reject(new Error('The quiz could not be generated. Please try again.'));return;}resolve(qs);}
-      catch(e){reject(new Error('The quiz could not be generated. Please try again.'));}
-    }).catch(function(){reject(new Error('Could not connect to generate your quiz. Please check your internet connection.'));});
-  });
+return new Promise(function(resolve,reject){
+var prompt=‘You are a quiz generator for the Daily Dig app, a Bible study tool used exclusively by Jehovah's Witnesses.\n\nSTRICT DOCTRINAL RULES – these are absolute and must never be violated:\n1. All answers, explanations, and feedback must reflect ONLY the beliefs and teachings of Jehovah's Witnesses as published by the Watch Tower Bible and Tract Society.\n2. All scripture quotations and references must come exclusively from the New World Translation of the Holy Scriptures (NWT).\n3. Do not introduce any theology, terminology, interpretation, or framing from any other religion, denomination, or Bible translation.\n4. Do not speculate beyond what is stated in the provided text. If the text does not say it, do not imply it.\n5. Use Jehovah's name where scripture references it. Do not substitute “God” or “Lord” where “Jehovah” is correct per the NWT.\n6. All correct answers and feedback must be directly and explicitly supported by the provided daily text or the cited scriptures.\n7. Wrong-answer feedback must gently correct using only what the text actually says – never introduce outside doctrine.\n8. Do not reference, quote, or allude to any other Bible translation, commentary, or religious source.\n\nSOURCE TEXT:\nDate: ‘+text.dateLabel+’\nTheme Verse: ‘+text.verse+’\nText Content: ‘+text.body+’\n\nGenerate exactly 10 multiple-choice quiz questions. Cover: exact scripture wording, key themes, doctrinal understanding per JW beliefs, reasoning, application, spiritual reflection.\n\nRespond ONLY with a valid JSON array. No markdown, no backticks.\nFormat: [{“category”:“label”,“question”:“text”,“options”:[“A”,“B”,“C”,“D”],“answer”:0,“correctFb”:“text”,“wrongFb”:“text”,“ref”:“NWT ref”}]\nRules: answer is zero-based index. Plain straight quotes only. Options under 15 words. Vary correct answer position. Warm encouraging feedback. Nothing contradicting JW doctrine.’;
+fetch(‘https://api.anthropic.com/v1/messages’,{method:‘POST’,headers:{‘Content-Type’:‘application/json’,‘x-api-key’:apiKey,‘anthropic-version’:‘2023-06-01’,‘anthropic-dangerous-direct-browser-access’:‘true’},body:JSON.stringify({model:‘claude-sonnet-4-20250514’,max_tokens:4000,messages:[{role:‘user’,content:prompt}]})})
+.then(function(r){return r.json();})
+.then(function(data){
+if(data.error){reject(new Error(‘There was a problem with your Daily Dig code: ‘+data.error.message));return;}
+var raw=data.content[0].text.trim().replace(/^`json\s*/i,'').replace(/^`\s*/i,’’).replace(/```\s*$/i,’’).trim();
+try{var qs=JSON.parse(raw);if(!Array.isArray(qs)||qs.length<5){reject(new Error(‘The quiz could not be generated. Please try again.’));return;}resolve(qs);}
+catch(e){reject(new Error(‘The quiz could not be generated. Please try again.’));}
+}).catch(function(){reject(new Error(‘Could not connect to generate your quiz. Please check your internet connection.’));});
+});
 }
-function renderTextPreview(){document.getElementById('textDate').textContent=dailyText.dateLabel;document.getElementById('textVerse').textContent=dailyText.verse;document.getElementById('textBody').textContent=dailyText.body;}
-function showText(){if(dailyText)renderTextPreview();showScreen('screen-text');}
-function beginQuiz(){current=0;score=0;missed=[];answered=false;showScreen('screen-quiz');renderQuestion();}
-function retakeQuiz(){current=0;score=0;missed=[];answered=false;showScreen('screen-quiz');renderQuestion();}
+function renderTextPreview(){document.getElementById(‘textDate’).textContent=dailyText.dateLabel;document.getElementById(‘textVerse’).textContent=dailyText.verse;document.getElementById(‘textBody’).textContent=dailyText.body;}
+function showText(){if(dailyText)renderTextPreview();showScreen(‘screen-text’);}
+function beginQuiz(){current=0;score=0;missed=[];answered=false;showScreen(‘screen-quiz’);renderQuestion();}
+function retakeQuiz(){current=0;score=0;missed=[];answered=false;showScreen(‘screen-quiz’);renderQuestion();}
 function buildProgress(){
-  var bar=document.getElementById('quizProgress');bar.innerHTML='';
-  for(var i=0;i<questions.length;i++){var pip=document.createElement('div');pip.className='q-pip'+(i<current?' done':i===current?' active':'');bar.appendChild(pip);}
-  var lbl=document.createElement('div');lbl.className='quiz-score-label';lbl.textContent=score+'/'+questions.length;bar.appendChild(lbl);
+var bar=document.getElementById(‘quizProgress’);bar.innerHTML=’’;
+for(var i=0;i<questions.length;i++){var pip=document.createElement(‘div’);pip.className=‘q-pip’+(i<current?’ done’:i===current?’ active’:’’);bar.appendChild(pip);}
+var lbl=document.createElement(‘div’);lbl.className=‘quiz-score-label’;lbl.textContent=score+’/’+questions.length;bar.appendChild(lbl);
 }
 function renderQuestion(){
-  answered=false;buildProgress();
-  var q=questions[current],letters=['A','B','C','D'],opts='';
-  for(var i=0;i<q.options.length;i++)opts+='<button class="option" id="opt'+i+'" onclick="choose('+i+')">'+'<span class="opt-letter">'+letters[i]+'</span><span>'+q.options[i]+'</span></button>';
-  var nl=current<questions.length-1?'Next Question &rarr;':'See Results';
-  document.getElementById('quizCard').innerHTML='<div class="quiz-card"><div class="quiz-card-header"><div class="q-meta"><span class="q-num">Question '+(current+1)+' of '+questions.length+'</span><span class="q-cat">'+(q.category||'')+'</span></div><div class="q-text">'+q.question+'</div></div><div class="quiz-card-body"><div class="options">'+opts+'</div><div class="feedback" id="feedback"></div><button class="btn-next" id="nextBtn" onclick="nextQ()">'+nl+'</button></div></div>';
+answered=false;buildProgress();
+var q=questions[current],letters=[‘A’,‘B’,‘C’,‘D’],opts=’’;
+for(var i=0;i<q.options.length;i++)opts+=’<button class="option" id="opt'+i+'" onclick="choose('+i+')">’+’<span class="opt-letter">’+letters[i]+’</span><span>’+q.options[i]+’</span></button>’;
+var nl=current<questions.length-1?‘Next Question →’:‘See Results’;
+document.getElementById(‘quizCard’).innerHTML=’<div class="quiz-card"><div class="quiz-card-header"><div class="q-meta"><span class="q-num">Question ‘+(current+1)+’ of ‘+questions.length+’</span><span class="q-cat">’+(q.category||’’)+’</span></div><div class="q-text">’+q.question+’</div></div><div class="quiz-card-body"><div class="options">’+opts+’</div><div class="feedback" id="feedback"></div><button class="btn-next" id="nextBtn" onclick="nextQ()">’+nl+’</button></div></div>’;
 }
 function choose(idx){
-  if(answered)return;answered=true;
-  var q=questions[current],isCorrect=idx===q.answer;
-  var ao=document.querySelectorAll('.option');for(var i=0;i<ao.length;i++)ao[i].disabled=true;
-  document.getElementById('opt'+idx).classList.add(isCorrect?'correct':'wrong');
-  if(!isCorrect){document.getElementById('opt'+q.answer).classList.add('correct');missed.push({q:q.question,a:q.options[q.answer],ref:q.ref||''});}
-  else score++;
-  var fb=document.getElementById('feedback');
-  fb.className='feedback show '+(isCorrect?'fb-correct':'fb-wrong');
-  fb.innerHTML='<strong>'+(isCorrect?'Correct.':'Not quite.')+'</strong> '+(isCorrect?q.correctFb:q.wrongFb)+(q.ref?'<span class="fb-ref">'+q.ref+'</span>':'');
-  document.getElementById('nextBtn').classList.add('show');buildProgress();
+if(answered)return;answered=true;
+var q=questions[current],isCorrect=idx===q.answer;
+var ao=document.querySelectorAll(’.option’);for(var i=0;i<ao.length;i++)ao[i].disabled=true;
+document.getElementById(‘opt’+idx).classList.add(isCorrect?‘correct’:‘wrong’);
+if(!isCorrect){document.getElementById(‘opt’+q.answer).classList.add(‘correct’);missed.push({q:q.question,a:q.options[q.answer],ref:q.ref||’’});}
+else score++;
+var fb=document.getElementById(‘feedback’);
+fb.className=‘feedback show ‘+(isCorrect?‘fb-correct’:‘fb-wrong’);
+fb.innerHTML=’<strong>’+(isCorrect?‘Correct.’:‘Not quite.’)+’</strong> ‘+(isCorrect?q.correctFb:q.wrongFb)+(q.ref?’<span class="fb-ref">’+q.ref+’</span>’:’’);
+document.getElementById(‘nextBtn’).classList.add(‘show’);buildProgress();
 }
 function nextQ(){current++;if(current>=questions.length)showResults();else renderQuestion();}
 function showResults(){
-  var pct=Math.round((score/questions.length)*100),r=46,circ=2*Math.PI*r,dash=(pct/100)*circ;
-  var svg='<svg width="110" height="110" viewBox="0 0 110 110"><circle cx="55" cy="55" r="'+r+'" fill="none" stroke="#E8DEC8" stroke-width="7"/><circle cx="55" cy="55" r="'+r+'" fill="none" stroke="#C8843A" stroke-width="7" stroke-dasharray="'+dash+' '+circ+'" stroke-linecap="round"/></svg>';
-  document.getElementById('resultsRing').innerHTML=svg+'<div class="results-score">'+score+'/'+questions.length+'</div>';
-  var title,sub;
-  if(pct===100){title='Perfect Score!';sub='You have absorbed every point from today\'s text. May it deepen your love for Jehovah and his Word.';}
-  else if(pct>=80){title='Well Done';sub='Strong grasp of today\'s text. Review what you missed and let it take root in your heart.';}
-  else if(pct>=60){title='Good Start';sub='You are building understanding. Re-reading the text alongside the scriptures will help reinforce what you have learned.';}
-  else{title='Keep Studying';sub='Every reading deepens understanding. Consider going through today\'s text again before tomorrow\'s.';}
-  document.getElementById('resultsTitle').textContent=title;
-  document.getElementById('resultsSub').textContent=sub;
-  var mw=document.getElementById('missedWrap'),ml=document.getElementById('missedList');
-  if(missed.length>0){ml.innerHTML='';for(var i=0;i<missed.length;i++){var m=missed[i];ml.innerHTML+='<div class="missed-item">'+m.q+'<div class="missed-ans">&#10003; '+m.a+'</div>'+(m.ref?'<div class="missed-ref">'+m.ref+'</div>':'')+'</div>';}mw.style.display='block';}
-  else mw.style.display='none';
-  showScreen('screen-results');
+var pct=Math.round((score/questions.length)*100),r=46,circ=2*Math.PI*r,dash=(pct/100)*circ;
+var svg=’<svg width="110" height="110" viewBox="0 0 110 110"><circle cx="55" cy="55" r="'+r+'" fill="none" stroke="#E8DEC8" stroke-width="7"/><circle cx="55" cy="55" r="'+r+'" fill="none" stroke="#C8843A" stroke-width="7" stroke-dasharray="'+dash+' '+circ+'" stroke-linecap="round"/></svg>’;
+document.getElementById(‘resultsRing’).innerHTML=svg+’<div class="results-score">’+score+’/’+questions.length+’</div>’;
+var title,sub;
+if(pct===100){title=‘Perfect Score!’;sub=‘You have absorbed every point from today's text. May it deepen your love for Jehovah and his Word.’;}
+else if(pct>=80){title=‘Well Done’;sub=‘Strong grasp of today's text. Review what you missed and let it take root in your heart.’;}
+else if(pct>=60){title=‘Good Start’;sub=‘You are building understanding. Re-reading the text alongside the scriptures will help reinforce what you have learned.’;}
+else{title=‘Keep Studying’;sub=‘Every reading deepens understanding. Consider going through today's text again before tomorrow's.’;}
+document.getElementById(‘resultsTitle’).textContent=title;
+document.getElementById(‘resultsSub’).textContent=sub;
+var mw=document.getElementById(‘missedWrap’),ml=document.getElementById(‘missedList’);
+if(missed.length>0){ml.innerHTML=’’;for(var i=0;i<missed.length;i++){var m=missed[i];ml.innerHTML+=’<div class="missed-item">’+m.q+’<div class="missed-ans">✓ ‘+m.a+’</div>’+(m.ref?’<div class="missed-ref">’+m.ref+’</div>’:’’)+’</div>’;}mw.style.display=‘block’;}
+else mw.style.display=‘none’;
+showScreen(‘screen-results’);
 }
-function showError(msg){document.getElementById('errorMsg').textContent=msg;showScreen('screen-error');}
+function showError(msg){document.getElementById(‘errorMsg’).textContent=msg;showScreen(‘screen-error’);}
 </script>
+
 </body>
 </html>
